@@ -1,0 +1,87 @@
+package httpapi
+
+import (
+	"bytes"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
+	"glasses-english-ai/internal/application"
+	infraCache "glasses-english-ai/internal/infrastructure/cache"
+	"glasses-english-ai/internal/infrastructure/learning"
+	infraVision "glasses-english-ai/internal/infrastructure/vision"
+)
+
+func TestRecognizeReturnsBilingualDisplayObjects(t *testing.T) {
+	server := newTestServer()
+	body := bytes.NewBufferString(`{"device_id":"glass_001","frame_id":"f_1","image_base64":"desk demo"}`)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/vision/recognize", body)
+	rec := httptest.NewRecorder()
+
+	server.Routes().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rec.Code)
+	}
+
+	var result recognitionResponse
+	if err := json.NewDecoder(rec.Body).Decode(&result); err != nil {
+		t.Fatal(err)
+	}
+	if len(result.Objects) < 3 {
+		t.Fatalf("expected multiple recognized objects, got %d", len(result.Objects))
+	}
+	first := result.Objects[0]
+	if first.Letter != "A" {
+		t.Fatalf("expected first object letter A, got %q", first.Letter)
+	}
+	if first.English != "cup" || first.Chinese != "杯子" {
+		t.Fatalf("expected cup bilingual result, got english=%q chinese=%q", first.English, first.Chinese)
+	}
+	if first.DisplayText != "A cup / 杯子" {
+		t.Fatalf("expected display text, got %q", first.DisplayText)
+	}
+	if first.Learning.ExampleSentence == "" {
+		t.Fatal("expected learning card example sentence")
+	}
+}
+
+func TestRecognizeReusesSceneCache(t *testing.T) {
+	server := newTestServer()
+	body := bytes.NewBufferString(`{"device_id":"glass_001","frame_id":"f_1","image_base64":"demo"}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/vision/recognize", body)
+	rec := httptest.NewRecorder()
+	server.Routes().ServeHTTP(rec, req)
+
+	var first recognitionResponse
+	if err := json.NewDecoder(rec.Body).Decode(&first); err != nil {
+		t.Fatal(err)
+	}
+
+	body = bytes.NewBufferString(`{"device_id":"glass_001","frame_id":"f_2","last_scene_hash":"` + first.SceneHash + `"}`)
+	req = httptest.NewRequest(http.MethodPost, "/api/vision/recognize", body)
+	rec = httptest.NewRecorder()
+	server.Routes().ServeHTTP(rec, req)
+
+	var cached recognitionResponse
+	if err := json.NewDecoder(rec.Body).Decode(&cached); err != nil {
+		t.Fatal(err)
+	}
+	if !cached.FromCache {
+		t.Fatal("expected cached response")
+	}
+	if cached.SceneHash != first.SceneHash {
+		t.Fatalf("expected scene hash %q, got %q", first.SceneHash, cached.SceneHash)
+	}
+}
+
+func newTestServer() *Server {
+	sceneRepo := infraCache.NewMemorySceneRepository(10, time.Hour)
+	recognizer := infraVision.NewMockProvider()
+	dictionary := learning.NewStaticDictionary()
+	useCase := application.NewRecognizeFrameUseCase(sceneRepo, recognizer, dictionary)
+	return NewServer(useCase)
+}

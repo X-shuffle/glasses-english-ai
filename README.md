@@ -6,17 +6,19 @@
 
 ## 当前状态
 
-初始化版本已经包含：
+DDD 初版已经包含：
 
 - Go HTTP 服务端。
 - `/healthz` 健康检查接口。
 - `/api/vision/recognize` 识别接口。
-- 内存场景缓存。
-- Mock 视觉识别器。
+- `RecognizeFrame` 应用用例。
+- `SceneRecognition`、`VisualObject`、`LearningCard` 领域模型。
+- 内存场景仓储，用于相似场景快速返回。
+- Mock 视觉识别器，用于模拟眼镜视野里的多个物体。
+- 静态中英词典，用于返回中文释义、音标和例句。
 - API、架构、路线图文档。
-- Git 初始化提交。
 
-当前代码暂时保持轻量，没有引入外部 Go 包，方便先跑通 DDD 的边界和服务流程。
+当前代码暂时保持轻量，没有引入外部 Go 包，方便先跑通“识别目标 -> 分配标签 -> 中英学习内容 -> 缓存复用”的完整闭环。
 
 ## 快速开始
 
@@ -37,28 +39,40 @@ http://localhost:8080
 ```bash
 curl -X POST http://localhost:8080/api/vision/recognize \
   -H 'Content-Type: application/json' \
-  -d '{"device_id":"glass_001","frame_id":"f_1","image_base64":"demo"}'
+  -d '{"device_id":"glass_001","frame_id":"f_1","image_base64":"desk demo"}'
 ```
 
-## DDD 分层目标
+返回结果会包含类似：
 
-项目后续按下面的方向组织代码：
+```json
+{
+  "letter": "A",
+  "english": "cup",
+  "chinese": "杯子",
+  "display_text": "A cup / 杯子",
+  "speak_text": "A. cup. This is a cup."
+}
+```
+
+## DDD 分层
+
+项目当前按下面的方向组织代码：
 
 ```text
 cmd/server
   服务启动入口，只负责组装依赖和启动 HTTP 服务。
 
-internal/interfaces
+internal/interfaces/httpapi
   用户接口层。放 HTTP handler、WebSocket handler、请求响应 DTO。
 
 internal/application
-  应用层。编排用例，例如 RecognizeFrame、ReplayCachedScene、StudyObject。
+  应用层。当前实现 RecognizeFrame 用例。
 
 internal/domain
-  领域层。放核心业务模型、聚合、领域服务、仓储接口和领域事件。
+  领域层。放核心业务模型、聚合、仓储接口和外部能力端口。
 
 internal/infrastructure
-  基础设施层。放云视觉 API、ONNX 推理、Redis/SQLite、文件存储等实现。
+  基础设施层。当前实现内存缓存、Mock 视觉识别、静态学习词典。
 
 internal/config
   配置读取和运行参数。
@@ -67,7 +81,7 @@ docs
   架构、API、路线图和训练方案文档。
 ```
 
-当前代码中的 `internal/httpapi`、`internal/cache`、`internal/vision` 是早期骨架，后续会逐步迁移到上面的 DDD 分层中。
+云视觉 API、ONNX 推理、Redis/SQLite 和文件存储后续都作为 `infrastructure` 下的适配器接入。
 
 ## 领域模型
 
@@ -173,24 +187,25 @@ application -> domain
 
 ## 推荐开发顺序
 
-1. 把现有 `httpapi`、`cache`、`vision` 迁移为 DDD 分层目录。
-2. 抽出 `domain` 模型：`Scene`、`VisualObject`、`LearningCard`、`BoundingBox`。
-3. 抽出 `application` 用例：`RecognizeFrame`。
-4. 将 Mock 识别器改成 `RecognitionProvider` 基础设施实现。
-5. 接入云端多模态视觉 API。
-6. 增加 SQLite 或 PostgreSQL 保存学习记录。
-7. 增加眼镜端 WebSocket 长连接。
-8. 增加区域变化检测，只识别变化区域。
-9. 积累数据后训练专用 YOLO/ONNX 模型。
+1. 接入云端多模态视觉 API，替换 Mock 视觉识别器。
+2. 增加图片帧压缩、大小限制和上传限流。
+3. 增加 SQLite 或 PostgreSQL 保存学习记录。
+4. 增加眼镜端 WebSocket 长连接。
+5. 增加区域变化检测，只识别变化区域。
+6. 增加本地轻量模型和离线候选结果。
+7. 积累数据后训练专用 YOLO/ONNX 模型。
 
 ## 当前目录结构
 
 ```text
 cmd/server             服务入口
 internal/config        环境变量配置
-internal/httpapi       HTTP API，后续迁移到 interfaces
-internal/cache         场景缓存，后续迁移到 infrastructure/cache
-internal/vision        识别接口和 Mock 实现，后续拆成 domain 端口和 infrastructure 实现
+internal/interfaces    HTTP API 和请求响应 DTO
+internal/application   RecognizeFrame 应用用例
+internal/domain        领域模型、仓储接口、外部能力端口
+internal/infrastructure/cache      内存场景仓储
+internal/infrastructure/learning   静态中英学习词典
+internal/infrastructure/vision     Mock 视觉识别器
 docs                   架构、API、路线图
 ```
 

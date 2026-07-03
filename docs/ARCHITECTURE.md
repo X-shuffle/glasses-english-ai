@@ -13,6 +13,22 @@
 
 ## 模块职责
 
+### DDD 服务端分层
+
+```text
+interfaces/httpapi
+  接收眼镜请求，转换 JSON DTO，返回 HUD 可用的中英标签。
+
+application
+  编排 RecognizeFrame 用例：校验帧、查缓存、调用识别、生成学习内容、保存场景。
+
+domain
+  表达核心业务：Frame、SceneRecognition、VisualObject、LearningCard、BoundingBox。
+
+infrastructure
+  提供可替换实现：内存场景仓储、Mock 视觉识别器、静态中英词典。
+```
+
 ### 眼镜本地端
 
 - 采集视频帧。
@@ -28,7 +44,7 @@
 - 做 scene hash 去重。
 - 管理本地缓存、区域缓存、历史识别结果。
 - 调用云端视觉 API 或本地模型。
-- 返回结构化英语学习数据。
+- 返回结构化英语学习数据，包括 `display_text` 和 `speak_text`，方便眼镜直接展示和朗读。
 
 ### AI 识别层
 
@@ -41,6 +57,8 @@
 ### 场景缓存
 
 对整帧生成 hash 或 embedding。相似度高时，直接复用上一次识别结果。
+
+当前第一版已经实现基于 `scene_hash` 的内存缓存。客户端传入 `last_scene_hash` 时，服务端会优先返回缓存结果，并标记 `from_cache: true`。
 
 ### 区域缓存
 
