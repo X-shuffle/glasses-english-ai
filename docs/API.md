@@ -139,3 +139,50 @@ CLOUD_VISION_ENDPOINT=https://example.com/vision/recognize
 
 - `english`：推荐字段，英文目标名。
 - `name`：兼容字段，如果没有 `english`，服务端会读取 `name`。
+
+## POST /api/learning/encounters
+
+记录某个设备遇到过的词。
+
+请求：
+
+```json
+{
+  "device_id": "demo_glasses",
+  "words": [
+    {"english": "cup", "chinese": "杯子"},
+    {"english": "book", "chinese": "书"}
+  ]
+}
+```
+
+响应：
+
+```json
+{
+  "words": [
+    {
+      "english": "cup",
+      "chinese": "杯子",
+      "count": 2,
+      "last_seen": "2026-07-03T09:00:00Z"
+    }
+  ]
+}
+```
+
+## GET /api/learning/history
+
+读取某个设备的学习历史。
+
+```text
+GET /api/learning/history?device_id=demo_glasses
+```
+
+## DELETE /api/learning/history
+
+清空某个设备的学习历史。
+
+```text
+DELETE /api/learning/history?device_id=demo_glasses
+```

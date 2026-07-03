@@ -23,8 +23,10 @@ func main() {
 		APIKey:   cfg.CloudVisionAPIKey,
 	})
 	dictionary := learning.NewStaticDictionary()
+	learningHistoryRepo := learning.NewMemoryHistoryRepository()
 	recognizeFrame := application.NewRecognizeFrameUseCase(sceneRepo, recognizer, dictionary)
-	server := httpapi.NewServer(recognizeFrame)
+	learningHistory := application.NewLearningHistoryUseCase(learningHistoryRepo)
+	server := httpapi.NewServer(recognizeFrame, learningHistory)
 
 	log.Printf("glasses english ai server listening on %s", cfg.Addr)
 	if err := http.ListenAndServe(cfg.Addr, server.Routes()); err != nil {

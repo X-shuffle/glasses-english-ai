@@ -15,6 +15,7 @@ const clearHistoryBtn = document.querySelector("#clearHistoryBtn");
 
 const localSceneKey = "glasses-english-ai:last-scene";
 const learnedWordsKey = "glasses-english-ai:learned-words";
+const deviceID = "demo_glasses";
 const autoScanMs = 2500;
 
 let lastSceneHash = "";
@@ -28,6 +29,7 @@ cacheBtn.addEventListener("click", () => recognize(true));
 clearHistoryBtn.addEventListener("click", clearLearnedWords);
 window.addEventListener("DOMContentLoaded", () => {
   renderLearnedWords();
+  loadServerLearnedWords();
   restoreLocalScene();
   recognize(false);
 });
@@ -72,7 +74,7 @@ async function recognize(useCache) {
   const frame = useCache ? "" : captureFrame();
 
   const payload = {
-    device_id: "demo_glasses",
+    device_id: deviceID,
     frame_id: `frame_${Date.now()}`,
     image_base64: frame,
     last_scene_hash: useCache ? lastSceneHash : "",
@@ -277,6 +279,7 @@ function rememberLearnedWords(objects) {
   }
   saveLearnedWords(learned);
   renderLearnedWords(learned);
+  syncLearnedWords(objects);
 }
 
 function loadLearnedWords() {
@@ -327,4 +330,65 @@ function renderLearnedWords(learned = loadLearnedWords()) {
 function clearLearnedWords() {
   localStorage.removeItem(learnedWordsKey);
   renderLearnedWords({});
+  fetch(`/api/learning/history?device_id=${encodeURIComponent(deviceID)}`, {method: "DELETE"})
+    .catch(() => {});
+}
+
+async function syncLearnedWords(objects) {
+  const words = objects
+    .filter((object) => object.english)
+    .map((object) => ({
+      english: object.english,
+      chinese: object.chinese
+    }));
+  if (words.length === 0) {
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/learning/encounters", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({device_id: deviceID, words})
+    });
+    if (!response.ok) {
+      return;
+    }
+    const history = await response.json();
+    mergeServerLearnedWords(history.words || []);
+  } catch (error) {
+    // Local history still works when sync is unavailable.
+  }
+}
+
+async function loadServerLearnedWords() {
+  try {
+    const response = await fetch(`/api/learning/history?device_id=${encodeURIComponent(deviceID)}`);
+    if (!response.ok) {
+      return;
+    }
+    const history = await response.json();
+    mergeServerLearnedWords(history.words || []);
+  } catch (error) {
+    // Local history remains the offline source of truth.
+  }
+}
+
+function mergeServerLearnedWords(words) {
+  if (words.length === 0) {
+    return;
+  }
+
+  const learned = loadLearnedWords();
+  for (const word of words) {
+    const key = word.english.toLowerCase();
+    learned[key] = {
+      english: word.english,
+      chinese: word.chinese,
+      count: Math.max(word.count, learned[key]?.count || 0),
+      last_seen: word.last_seen || learned[key]?.last_seen || ""
+    };
+  }
+  saveLearnedWords(learned);
+  renderLearnedWords(learned);
 }

@@ -14,6 +14,7 @@ DDD 初版已经包含：
 - `/` 眼镜 HUD Demo，可以使用模拟场景或浏览器摄像头看到视野目标框和中英标签。
 - HUD Demo 支持自动识别和浏览器本地缓存，网络失败时可展示最近一次结果。
 - HUD Demo 支持英文朗读和本地已遇到单词记录。
+- 服务端提供学习历史 API，HUD 会把已遇到的词同步到服务端内存记录。
 - `RecognizeFrame` 应用用例。
 - `SceneRecognition`、`VisualObject`、`LearningCard` 领域模型。
 - 内存场景仓储，用于相似场景快速返回。
@@ -50,6 +51,8 @@ http://localhost:8080/
 点击“自动识别”后，页面会定时截帧识别。每次成功识别都会把最新结果保存到浏览器 `localStorage`；如果网络断开或服务端不可用，HUD 会自动恢复最近一次结果并显示 `Offline cache`，让眼镜端先保留可用的英语环境。
 
 每个识别卡片都有“朗读”按钮，会调用浏览器 `SpeechSynthesis` 播放英文标签和例句。页面还会把识别到的单词累计到“已遇到的词”，帮助用户形成一个轻量的本地学习记录。
+
+学习记录会同时保存在浏览器本地和服务端内存中。当前服务端内存记录适合 MVP 演示，后续可以替换成 SQLite/PostgreSQL。
 
 测试识别接口：
 
@@ -270,7 +273,7 @@ internal/interfaces    HTTP API 和请求响应 DTO
 internal/application   RecognizeFrame 应用用例
 internal/domain        领域模型、仓储接口、外部能力端口
 internal/infrastructure/cache      内存场景仓储
-internal/infrastructure/learning   静态中英学习词典
+internal/infrastructure/learning   静态中英学习词典和内存学习历史仓储
 internal/infrastructure/vision     Mock 视觉识别器和通用 HTTP 云视觉适配器
 internal/interfaces/httpapi/static HUD Demo、摄像头取帧、自动识别、本地缓存、TTS 和学习历史脚本
 docs                   架构、API、路线图

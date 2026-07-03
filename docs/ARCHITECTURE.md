@@ -20,13 +20,13 @@ interfaces/httpapi
   接收眼镜请求，转换 JSON DTO，返回 HUD 可用的中英标签，并提供模拟 HUD Demo。
 
 application
-  编排 RecognizeFrame 用例：校验帧、查缓存、调用识别、生成学习内容、保存场景。
+  编排 RecognizeFrame 用例和学习历史用例：校验帧、查缓存、调用识别、生成学习内容、保存场景、记录已遇到单词。
 
 domain
   表达核心业务：Frame、SceneRecognition、VisualObject、LearningCard、BoundingBox。
 
 infrastructure
-  提供可替换实现：内存场景仓储、Mock 视觉识别器、通用 HTTP 云视觉适配器、静态中英词典。
+  提供可替换实现：内存场景仓储、内存学习历史仓储、Mock 视觉识别器、通用 HTTP 云视觉适配器、静态中英词典。
 ```
 
 ### 眼镜本地端

@@ -133,12 +133,72 @@ func TestDemoPageAndStaticAssetsAreServed(t *testing.T) {
 	if !strings.Contains(script, "learnedWordsKey") {
 		t.Fatal("expected learned words history logic")
 	}
+	if !strings.Contains(script, "/api/learning/encounters") {
+		t.Fatal("expected server learning history sync logic")
+	}
+}
+
+func TestLearningHistoryRecordsListsAndClearsWords(t *testing.T) {
+	server := newTestServer()
+	body := bytes.NewBufferString(`{"device_id":"glass_001","words":[{"english":"cup","chinese":"杯子"},{"english":"book","chinese":"书"},{"english":"cup","chinese":"杯子"}]}`)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/learning/encounters", body)
+	rec := httptest.NewRecorder()
+	server.Routes().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected record status 200, got %d", rec.Code)
+	}
+
+	var recorded learningHistoryResponse
+	if err := json.NewDecoder(rec.Body).Decode(&recorded); err != nil {
+		t.Fatal(err)
+	}
+	if len(recorded.Words) != 2 {
+		t.Fatalf("expected 2 learned words, got %d", len(recorded.Words))
+	}
+	if recorded.Words[0].English != "cup" || recorded.Words[0].Count != 2 {
+		t.Fatalf("expected cup count 2 first, got %#v", recorded.Words[0])
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/api/learning/history?device_id=glass_001", nil)
+	rec = httptest.NewRecorder()
+	server.Routes().ServeHTTP(rec, req)
+
+	var listed learningHistoryResponse
+	if err := json.NewDecoder(rec.Body).Decode(&listed); err != nil {
+		t.Fatal(err)
+	}
+	if len(listed.Words) != 2 {
+		t.Fatalf("expected listed words, got %d", len(listed.Words))
+	}
+
+	req = httptest.NewRequest(http.MethodDelete, "/api/learning/history?device_id=glass_001", nil)
+	rec = httptest.NewRecorder()
+	server.Routes().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected clear status 200, got %d", rec.Code)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/api/learning/history?device_id=glass_001", nil)
+	rec = httptest.NewRecorder()
+	server.Routes().ServeHTTP(rec, req)
+
+	var cleared learningHistoryResponse
+	if err := json.NewDecoder(rec.Body).Decode(&cleared); err != nil {
+		t.Fatal(err)
+	}
+	if len(cleared.Words) != 0 {
+		t.Fatalf("expected cleared history, got %d words", len(cleared.Words))
+	}
 }
 
 func newTestServer() *Server {
 	sceneRepo := infraCache.NewMemorySceneRepository(10, time.Hour)
 	recognizer := infraVision.NewMockProvider()
 	dictionary := learning.NewStaticDictionary()
+	learningHistoryRepo := learning.NewMemoryHistoryRepository()
 	useCase := application.NewRecognizeFrameUseCase(sceneRepo, recognizer, dictionary)
-	return NewServer(useCase)
+	learningHistory := application.NewLearningHistoryUseCase(learningHistoryRepo)
+	return NewServer(useCase, learningHistory)
 }

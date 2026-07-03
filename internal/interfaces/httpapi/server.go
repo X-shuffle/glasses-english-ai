@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io/fs"
 	"net/http"
+	"time"
 
 	"glasses-english-ai/internal/application"
 	"glasses-english-ai/internal/domain"
@@ -15,11 +16,15 @@ import (
 var staticFiles embed.FS
 
 type Server struct {
-	recognizeFrame *application.RecognizeFrameUseCase
+	recognizeFrame  *application.RecognizeFrameUseCase
+	learningHistory *application.LearningHistoryUseCase
 }
 
-func NewServer(recognizeFrame *application.RecognizeFrameUseCase) *Server {
-	return &Server{recognizeFrame: recognizeFrame}
+func NewServer(recognizeFrame *application.RecognizeFrameUseCase, learningHistory *application.LearningHistoryUseCase) *Server {
+	return &Server{
+		recognizeFrame:  recognizeFrame,
+		learningHistory: learningHistory,
+	}
 }
 
 func (s *Server) Routes() http.Handler {
@@ -28,6 +33,9 @@ func (s *Server) Routes() http.Handler {
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.FS(mustStaticSubtree()))))
 	mux.HandleFunc("GET /healthz", s.health)
 	mux.HandleFunc("POST /api/vision/recognize", s.recognize)
+	mux.HandleFunc("GET /api/learning/history", s.listLearningHistory)
+	mux.HandleFunc("DELETE /api/learning/history", s.clearLearningHistory)
+	mux.HandleFunc("POST /api/learning/encounters", s.recordLearningEncounters)
 	return mux
 }
 
@@ -67,6 +75,46 @@ func (s *Server) recognize(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, newRecognitionResponse(result))
+}
+
+func (s *Server) recordLearningEncounters(w http.ResponseWriter, r *http.Request) {
+	var req learningEncounterRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid json body")
+		return
+	}
+
+	encounters := make([]domain.LearningEncounter, 0, len(req.Words))
+	for _, word := range req.Words {
+		encounters = append(encounters, domain.LearningEncounter{
+			English: word.English,
+			Chinese: word.Chinese,
+		})
+	}
+
+	words, err := s.learningHistory.Record(r.Context(), req.DeviceID, encounters)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, learningHistoryResponse{Words: newLearnedWordResponses(words)})
+}
+
+func (s *Server) listLearningHistory(w http.ResponseWriter, r *http.Request) {
+	words, err := s.learningHistory.List(r.Context(), r.URL.Query().Get("device_id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, learningHistoryResponse{Words: newLearnedWordResponses(words)})
+}
+
+func (s *Server) clearLearningHistory(w http.ResponseWriter, r *http.Request) {
+	if err := s.learningHistory.Clear(r.Context(), r.URL.Query().Get("device_id")); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 type recognitionRequest struct {
@@ -113,6 +161,27 @@ type learningCard struct {
 	ExampleMeaning  string `json:"example_meaning"`
 }
 
+type learningEncounterRequest struct {
+	DeviceID string                    `json:"device_id"`
+	Words    []learningEncounterObject `json:"words"`
+}
+
+type learningEncounterObject struct {
+	English string `json:"english"`
+	Chinese string `json:"chinese"`
+}
+
+type learningHistoryResponse struct {
+	Words []learnedWordResponse `json:"words"`
+}
+
+type learnedWordResponse struct {
+	English  string `json:"english"`
+	Chinese  string `json:"chinese"`
+	Count    int    `json:"count"`
+	LastSeen string `json:"last_seen"`
+}
+
 func newRecognitionResponse(scene domain.SceneRecognition) recognitionResponse {
 	objects := make([]objectResponse, 0, len(scene.Objects))
 	for _, object := range scene.Objects {
@@ -147,6 +216,19 @@ func newRecognitionResponse(scene domain.SceneRecognition) recognitionResponse {
 		FromCache: scene.FromCache,
 		Objects:   objects,
 	}
+}
+
+func newLearnedWordResponses(words []domain.LearnedWord) []learnedWordResponse {
+	result := make([]learnedWordResponse, 0, len(words))
+	for _, word := range words {
+		result = append(result, learnedWordResponse{
+			English:  word.English,
+			Chinese:  word.Chinese,
+			Count:    word.Count,
+			LastSeen: word.LastSeen.Format(time.RFC3339),
+		})
+	}
+	return result
 }
 
 func writeJSON(w http.ResponseWriter, status int, payload any) {
