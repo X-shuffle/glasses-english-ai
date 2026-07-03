@@ -17,7 +17,11 @@ func main() {
 	cfg := config.Load()
 
 	sceneRepo := infraCache.NewMemorySceneRepository(cfg.CacheMaxItems, 12*time.Hour)
-	recognizer := infraVision.NewMockProvider()
+	recognizer := infraVision.NewProvider(infraVision.ProviderConfig{
+		Provider: cfg.VisionProvider,
+		Endpoint: cfg.CloudVisionURL,
+		APIKey:   cfg.CloudVisionAPIKey,
+	})
 	dictionary := learning.NewStaticDictionary()
 	recognizeFrame := application.NewRecognizeFrameUseCase(sceneRepo, recognizer, dictionary)
 	server := httpapi.NewServer(recognizeFrame)

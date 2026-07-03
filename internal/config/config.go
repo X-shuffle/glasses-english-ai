@@ -6,16 +6,20 @@ import (
 )
 
 type Config struct {
-	Addr           string
-	CacheMaxItems  int
-	VisionProvider string
+	Addr              string
+	CacheMaxItems     int
+	VisionProvider    string
+	CloudVisionURL    string
+	CloudVisionAPIKey string
 }
 
 func Load() Config {
 	return Config{
-		Addr:           getEnv("APP_ADDR", ":8080"),
-		CacheMaxItems:  getEnvInt("CACHE_MAX_ITEMS", 1000),
-		VisionProvider: getEnv("VISION_PROVIDER", "mock"),
+		Addr:              getEnv("APP_ADDR", ":8080"),
+		CacheMaxItems:     getEnvInt("CACHE_MAX_ITEMS", 1000),
+		VisionProvider:    getEnv("VISION_PROVIDER", "mock"),
+		CloudVisionURL:    getEnv("CLOUD_VISION_ENDPOINT", ""),
+		CloudVisionAPIKey: getEnv("CLOUD_VISION_API_KEY", ""),
 	}
 }
 

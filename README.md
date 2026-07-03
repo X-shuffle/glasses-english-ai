@@ -94,6 +94,55 @@ docs
 
 云视觉 API、ONNX 推理、Redis/SQLite 和文件存储后续都作为 `infrastructure` 下的适配器接入。
 
+## 接入云视觉识别
+
+本地默认使用 Mock 识别器：
+
+```env
+VISION_PROVIDER=mock
+```
+
+如果已有外部视觉识别服务，可以切换为：
+
+```env
+VISION_PROVIDER=cloud
+CLOUD_VISION_ENDPOINT=https://example.com/vision/recognize
+CLOUD_VISION_API_KEY=your-token
+```
+
+服务端会把眼镜帧转发给 `CLOUD_VISION_ENDPOINT`。云服务只需要返回英文目标名和位置框，本项目会继续负责：
+
+- 给目标分配 `A/B/C` 标签。
+- 查询中文释义、音标和例句。
+- 生成 `display_text` 和 `speak_text`。
+- 缓存 `scene_hash`，让眼镜端快速复用结果。
+
+云视觉服务请求：
+
+```json
+{
+  "device_id": "demo_glasses",
+  "frame_id": "frame_1",
+  "image_base64": "data:image/jpeg;base64,...",
+  "last_scene_hash": "optional"
+}
+```
+
+云视觉服务响应：
+
+```json
+{
+  "scene_hash": "scene_001",
+  "objects": [
+    {
+      "english": "chair",
+      "box": {"x": 10, "y": 20, "width": 80, "height": 90},
+      "score": 0.91
+    }
+  ]
+}
+```
+
 ## 领域模型
 
 ### 核心领域：眼镜英语识别学习
@@ -216,7 +265,7 @@ internal/application   RecognizeFrame 应用用例
 internal/domain        领域模型、仓储接口、外部能力端口
 internal/infrastructure/cache      内存场景仓储
 internal/infrastructure/learning   静态中英学习词典
-internal/infrastructure/vision     Mock 视觉识别器
+internal/infrastructure/vision     Mock 视觉识别器和通用 HTTP 云视觉适配器
 internal/interfaces/httpapi/static HUD Demo 静态页面和摄像头取帧脚本
 docs                   架构、API、路线图
 ```

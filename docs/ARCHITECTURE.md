@@ -26,7 +26,7 @@ domain
   表达核心业务：Frame、SceneRecognition、VisualObject、LearningCard、BoundingBox。
 
 infrastructure
-  提供可替换实现：内存场景仓储、Mock 视觉识别器、静态中英词典。
+  提供可替换实现：内存场景仓储、Mock 视觉识别器、通用 HTTP 云视觉适配器、静态中英词典。
 ```
 
 ### 眼镜本地端
@@ -53,6 +53,8 @@ infrastructure
 第一阶段建议使用云 API 或现成模型快速验证体验。
 
 第二阶段再收集眼镜真实场景数据，训练专用检测模型，并导出 ONNX、NCNN 或 TensorRT 版本用于本地端。
+
+当前第一版已经提供 `VISION_PROVIDER=cloud` 的通用 HTTP 适配器。云端只需要返回英文目标名、位置框和置信度，服务端应用层会继续生成中英学习内容。
 
 ## 缓存策略
 

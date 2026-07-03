@@ -84,3 +84,50 @@
 - `score`：识别置信度。
 - `scene_hash`：场景缓存键。
 - `from_cache`：结果是否来自缓存。
+
+## Cloud Vision Provider Contract
+
+当服务端配置为：
+
+```env
+VISION_PROVIDER=cloud
+CLOUD_VISION_ENDPOINT=https://example.com/vision/recognize
+```
+
+后端会把眼镜帧转发到 `CLOUD_VISION_ENDPOINT`。
+
+请求：
+
+```json
+{
+  "device_id": "glass_001",
+  "frame_id": "f_123",
+  "image_base64": "data:image/jpeg;base64,...",
+  "last_scene_hash": "optional"
+}
+```
+
+响应：
+
+```json
+{
+  "scene_hash": "scene_001",
+  "objects": [
+    {
+      "english": "chair",
+      "box": {
+        "x": 10,
+        "y": 20,
+        "width": 80,
+        "height": 90
+      },
+      "score": 0.91
+    }
+  ]
+}
+```
+
+兼容字段：
+
+- `english`：推荐字段，英文目标名。
+- `name`：兼容字段，如果没有 `english`，服务端会读取 `name`。
