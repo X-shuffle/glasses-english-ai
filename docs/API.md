@@ -140,6 +140,38 @@ CLOUD_VISION_ENDPOINT=https://example.com/vision/recognize
 - `english`：推荐字段，英文目标名。
 - `name`：兼容字段，如果没有 `english`，服务端会读取 `name`。
 
+## OpenAI Vision Provider
+
+当服务端配置为：
+
+```env
+VISION_PROVIDER=openai
+OPENAI_API_KEY=your-openai-api-key
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_VISION_MODEL=gpt-5.5
+```
+
+后端会把 `image_base64` 作为图片输入发送给 OpenAI 视觉模型，并使用 JSON Schema 要求模型返回：
+
+```json
+{
+  "objects": [
+    {
+      "english": "chair",
+      "score": 0.94,
+      "box": {
+        "x": 100,
+        "y": 90,
+        "width": 140,
+        "height": 180
+      }
+    }
+  ]
+}
+```
+
+坐标以 `800x450` 为标准画布，HUD 会按比例叠加到当前视野。
+
 ## POST /api/learning/encounters
 
 记录某个设备遇到过的词。

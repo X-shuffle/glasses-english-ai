@@ -10,9 +10,12 @@ import (
 )
 
 type ProviderConfig struct {
-	Provider string
-	Endpoint string
-	APIKey   string
+	Provider      string
+	Endpoint      string
+	APIKey        string
+	OpenAIAPIKey  string
+	OpenAIBaseURL string
+	OpenAIModel   string
 }
 
 func NewProvider(cfg ProviderConfig) domain.RecognitionProvider {
@@ -23,6 +26,17 @@ func NewProvider(cfg ProviderConfig) domain.RecognitionProvider {
 			return NewMockProvider()
 		}
 		return NewCloudProvider(cfg.Endpoint, cfg.APIKey, &http.Client{Timeout: 15 * time.Second})
+	case "openai":
+		if cfg.OpenAIAPIKey == "" {
+			log.Println("OPENAI_API_KEY is empty; falling back to mock vision provider")
+			return NewMockProvider()
+		}
+		return NewOpenAIProvider(OpenAIProviderConfig{
+			APIKey:  cfg.OpenAIAPIKey,
+			BaseURL: cfg.OpenAIBaseURL,
+			Model:   cfg.OpenAIModel,
+			Client:  &http.Client{Timeout: 30 * time.Second},
+		})
 	default:
 		return NewMockProvider()
 	}

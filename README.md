@@ -137,6 +137,17 @@ CLOUD_VISION_API_KEY=your-token
 }
 ```
 
+如果想直接使用 OpenAI 视觉模型，可以配置：
+
+```env
+VISION_PROVIDER=openai
+OPENAI_API_KEY=your-openai-api-key
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_VISION_MODEL=gpt-5.5
+```
+
+OpenAI 适配器会把浏览器摄像头截帧的 `data:image/jpeg;base64,...` 发送到视觉模型，并要求模型用 JSON Schema 返回英文目标名、置信度和 800x450 坐标框。后续中英学习内容仍由本服务生成。
+
 云视觉服务响应：
 
 ```json
@@ -274,7 +285,7 @@ internal/application   RecognizeFrame 应用用例
 internal/domain        领域模型、仓储接口、外部能力端口
 internal/infrastructure/cache      内存场景仓储
 internal/infrastructure/learning   静态中英学习词典和内存学习历史仓储
-internal/infrastructure/vision     Mock 视觉识别器和通用 HTTP 云视觉适配器
+internal/infrastructure/vision     Mock 视觉识别器、通用 HTTP 云视觉适配器和 OpenAI 视觉适配器
 internal/interfaces/httpapi/static HUD Demo、摄像头取帧、自动识别、本地缓存、TTS 和学习历史脚本
 docs                   架构、API、路线图
 ```

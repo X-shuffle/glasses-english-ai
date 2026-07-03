@@ -18,9 +18,12 @@ func main() {
 
 	sceneRepo := infraCache.NewMemorySceneRepository(cfg.CacheMaxItems, 12*time.Hour)
 	recognizer := infraVision.NewProvider(infraVision.ProviderConfig{
-		Provider: cfg.VisionProvider,
-		Endpoint: cfg.CloudVisionURL,
-		APIKey:   cfg.CloudVisionAPIKey,
+		Provider:      cfg.VisionProvider,
+		Endpoint:      cfg.CloudVisionURL,
+		APIKey:        cfg.CloudVisionAPIKey,
+		OpenAIAPIKey:  cfg.OpenAIAPIKey,
+		OpenAIBaseURL: cfg.OpenAIBaseURL,
+		OpenAIModel:   cfg.OpenAIModel,
 	})
 	dictionary := learning.NewStaticDictionary()
 	learningHistoryRepo := learning.NewMemoryHistoryRepository()

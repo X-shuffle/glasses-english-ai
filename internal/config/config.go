@@ -11,6 +11,9 @@ type Config struct {
 	VisionProvider    string
 	CloudVisionURL    string
 	CloudVisionAPIKey string
+	OpenAIAPIKey      string
+	OpenAIBaseURL     string
+	OpenAIModel       string
 }
 
 func Load() Config {
@@ -20,6 +23,9 @@ func Load() Config {
 		VisionProvider:    getEnv("VISION_PROVIDER", "mock"),
 		CloudVisionURL:    getEnv("CLOUD_VISION_ENDPOINT", ""),
 		CloudVisionAPIKey: getEnv("CLOUD_VISION_API_KEY", ""),
+		OpenAIAPIKey:      getEnv("OPENAI_API_KEY", ""),
+		OpenAIBaseURL:     getEnv("OPENAI_BASE_URL", "https://api.openai.com/v1"),
+		OpenAIModel:       getEnv("OPENAI_VISION_MODEL", "gpt-5.5"),
 	}
 }
 
