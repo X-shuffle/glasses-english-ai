@@ -9,6 +9,7 @@
   --accent: #62d6a3;
   --accent-2: #f3c969;
   --danger: #ff8a7a;
+  --offline: #8fb9ff;
 }
 
 * {
@@ -205,9 +206,13 @@ h1 {
   color: var(--danger);
 }
 
+.status.is-offline {
+  color: var(--offline);
+}
+
 .controls {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
 
@@ -228,6 +233,11 @@ button:hover {
 button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
+}
+
+button.is-active {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .meta {

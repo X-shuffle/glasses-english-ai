@@ -96,6 +96,9 @@ func TestDemoPageAndStaticAssetsAreServed(t *testing.T) {
 	if !strings.Contains(rec.Body.String(), "cameraFeed") {
 		t.Fatal("expected camera video element")
 	}
+	if !strings.Contains(rec.Body.String(), "autoBtn") {
+		t.Fatal("expected auto scan control")
+	}
 
 	req = httptest.NewRequest(http.MethodGet, "/static/app.js", nil)
 	rec = httptest.NewRecorder()
@@ -114,6 +117,12 @@ func TestDemoPageAndStaticAssetsAreServed(t *testing.T) {
 	}
 	if !strings.Contains(script, "getUserMedia") {
 		t.Fatal("expected camera capture logic")
+	}
+	if !strings.Contains(script, "localStorage") {
+		t.Fatal("expected local cache logic")
+	}
+	if !strings.Contains(script, "toggleAutoScan") {
+		t.Fatal("expected auto scan logic")
 	}
 }
 

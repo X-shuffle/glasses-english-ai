@@ -18,6 +18,12 @@
 
 页面会调用 `/api/vision/recognize`，并把返回的 `box`、`letter`、`english`、`chinese`、`display_text` 叠加到视野里。默认使用模拟场景；允许浏览器摄像头权限后，会截取真实摄像头当前帧作为 `image_base64` 上传。
 
+HUD 还支持：
+
+- 自动识别：定时截帧并刷新画面标签。
+- 本地缓存：成功识别后把最近结果保存到浏览器 `localStorage`。
+- 离线兜底：请求失败时恢复最近一次识别结果，并显示 `Offline cache`。
+
 ## POST /api/vision/recognize
 
 识别眼镜上传的图片帧。

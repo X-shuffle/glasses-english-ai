@@ -8,15 +8,24 @@ const sceneHashEl = document.querySelector("#sceneHash");
 const cacheStateEl = document.querySelector("#cacheState");
 const cameraBtn = document.querySelector("#cameraBtn");
 const recognizeBtn = document.querySelector("#recognizeBtn");
+const autoBtn = document.querySelector("#autoBtn");
 const cacheBtn = document.querySelector("#cacheBtn");
+
+const localSceneKey = "glasses-english-ai:last-scene";
+const autoScanMs = 2500;
 
 let lastSceneHash = "";
 let cameraStream = null;
+let autoTimer = null;
 
 cameraBtn.addEventListener("click", toggleCamera);
 recognizeBtn.addEventListener("click", () => recognize(false));
+autoBtn.addEventListener("click", toggleAutoScan);
 cacheBtn.addEventListener("click", () => recognize(true));
-window.addEventListener("DOMContentLoaded", () => recognize(false));
+window.addEventListener("DOMContentLoaded", () => {
+  restoreLocalScene();
+  recognize(false);
+});
 
 async function toggleCamera() {
   if (cameraStream) {
@@ -53,6 +62,7 @@ async function recognize(useCache) {
   recognizeBtn.disabled = true;
   cacheBtn.disabled = true;
   cameraBtn.disabled = true;
+  autoBtn.disabled = true;
 
   const frame = useCache ? "" : captureFrame();
 
@@ -76,13 +86,19 @@ async function recognize(useCache) {
     const result = await response.json();
     lastSceneHash = result.scene_hash;
     renderResult(result);
+    saveLocalScene(result);
     setStatus("Ready", "");
   } catch (error) {
-    setStatus("Error", "is-error");
+    if (restoreLocalScene()) {
+      setStatus("Offline cache", "is-offline");
+    } else {
+      setStatus("Error", "is-error");
+    }
   } finally {
     recognizeBtn.disabled = false;
     cacheBtn.disabled = !lastSceneHash;
     cameraBtn.disabled = false;
+    autoBtn.disabled = false;
   }
 }
 
@@ -101,6 +117,36 @@ function renderResult(result) {
   cards.replaceChildren(...result.objects.map(renderCard));
   sceneHashEl.textContent = result.scene_hash || "-";
   cacheStateEl.textContent = String(result.from_cache);
+}
+
+function saveLocalScene(result) {
+  try {
+    localStorage.setItem(localSceneKey, JSON.stringify({
+      saved_at: new Date().toISOString(),
+      result
+    }));
+  } catch (error) {
+    // Local cache is best-effort; HUD should keep working without it.
+  }
+}
+
+function restoreLocalScene() {
+  try {
+    const raw = localStorage.getItem(localSceneKey);
+    if (!raw) {
+      return false;
+    }
+    const cached = JSON.parse(raw);
+    if (!cached.result?.objects?.length) {
+      return false;
+    }
+    const result = {...cached.result, from_cache: true};
+    lastSceneHash = result.scene_hash || lastSceneHash;
+    renderResult(result);
+    return true;
+  } catch (error) {
+    return false;
+  }
 }
 
 function renderTarget(object) {
@@ -160,4 +206,20 @@ function stopCamera() {
   cameraFeed.srcObject = null;
   scene.classList.remove("is-camera");
   cameraBtn.textContent = "打开摄像头";
+}
+
+function toggleAutoScan() {
+  if (autoTimer) {
+    clearInterval(autoTimer);
+    autoTimer = null;
+    autoBtn.textContent = "自动识别";
+    autoBtn.classList.remove("is-active");
+    setStatus("Ready", "");
+    return;
+  }
+
+  autoTimer = setInterval(() => recognize(false), autoScanMs);
+  autoBtn.textContent = "停止自动";
+  autoBtn.classList.add("is-active");
+  recognize(false);
 }
