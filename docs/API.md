@@ -23,6 +23,8 @@ HUD 还支持：
 - 自动识别：定时截帧并刷新画面标签。
 - 本地缓存：成功识别后把最近结果保存到浏览器 `localStorage`。
 - 离线兜底：请求失败时恢复最近一次识别结果，并显示 `Offline cache`。
+- 英文朗读：调用浏览器 `SpeechSynthesis` 播放目标英文和例句。
+- 学习历史：把识别到的词累计到本地“已遇到的词”列表。
 
 ## POST /api/vision/recognize
 

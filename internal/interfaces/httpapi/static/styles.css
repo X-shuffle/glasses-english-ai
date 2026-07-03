@@ -273,6 +273,7 @@ dd {
   display: grid;
   gap: 10px;
   overflow: auto;
+  min-height: 0;
 }
 
 .card {
@@ -320,6 +321,75 @@ dd {
   color: var(--muted);
   font-size: 13px;
   line-height: 1.45;
+}
+
+.card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.speak-btn,
+#clearHistoryBtn {
+  width: auto;
+  height: 30px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.history-section {
+  display: grid;
+  gap: 10px;
+  min-height: 120px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+h2 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.word-history {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-content: flex-start;
+  padding: 10px;
+  min-height: 76px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-2);
+}
+
+.word-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgb(16 19 22 / 60%);
+  font-size: 12px;
+}
+
+.word-chip strong {
+  color: var(--text);
+}
+
+.word-chip span {
+  color: var(--accent-2);
+}
+
+.word-chip em {
+  color: var(--muted);
+  font-style: normal;
 }
 
 @media (max-width: 860px) {

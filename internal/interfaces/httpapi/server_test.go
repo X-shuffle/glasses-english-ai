@@ -99,6 +99,9 @@ func TestDemoPageAndStaticAssetsAreServed(t *testing.T) {
 	if !strings.Contains(rec.Body.String(), "autoBtn") {
 		t.Fatal("expected auto scan control")
 	}
+	if !strings.Contains(rec.Body.String(), "已遇到的词") {
+		t.Fatal("expected learned words panel")
+	}
 
 	req = httptest.NewRequest(http.MethodGet, "/static/app.js", nil)
 	rec = httptest.NewRecorder()
@@ -123,6 +126,12 @@ func TestDemoPageAndStaticAssetsAreServed(t *testing.T) {
 	}
 	if !strings.Contains(script, "toggleAutoScan") {
 		t.Fatal("expected auto scan logic")
+	}
+	if !strings.Contains(script, "speechSynthesis") {
+		t.Fatal("expected TTS learning logic")
+	}
+	if !strings.Contains(script, "learnedWordsKey") {
+		t.Fatal("expected learned words history logic")
 	}
 }
 

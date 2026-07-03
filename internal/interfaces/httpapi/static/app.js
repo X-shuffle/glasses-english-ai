@@ -1,5 +1,6 @@
 const overlay = document.querySelector("#overlay");
 const cards = document.querySelector("#cards");
+const wordHistory = document.querySelector("#wordHistory");
 const scene = document.querySelector("#scene");
 const cameraFeed = document.querySelector("#cameraFeed");
 const captureCanvas = document.querySelector("#captureCanvas");
@@ -10,8 +11,10 @@ const cameraBtn = document.querySelector("#cameraBtn");
 const recognizeBtn = document.querySelector("#recognizeBtn");
 const autoBtn = document.querySelector("#autoBtn");
 const cacheBtn = document.querySelector("#cacheBtn");
+const clearHistoryBtn = document.querySelector("#clearHistoryBtn");
 
 const localSceneKey = "glasses-english-ai:last-scene";
+const learnedWordsKey = "glasses-english-ai:learned-words";
 const autoScanMs = 2500;
 
 let lastSceneHash = "";
@@ -22,7 +25,9 @@ cameraBtn.addEventListener("click", toggleCamera);
 recognizeBtn.addEventListener("click", () => recognize(false));
 autoBtn.addEventListener("click", toggleAutoScan);
 cacheBtn.addEventListener("click", () => recognize(true));
+clearHistoryBtn.addEventListener("click", clearLearnedWords);
 window.addEventListener("DOMContentLoaded", () => {
+  renderLearnedWords();
   restoreLocalScene();
   recognize(false);
 });
@@ -117,6 +122,7 @@ function renderResult(result) {
   cards.replaceChildren(...result.objects.map(renderCard));
   sceneHashEl.textContent = result.scene_hash || "-";
   cacheStateEl.textContent = String(result.from_cache);
+  rememberLearnedWords(result.objects);
 }
 
 function saveLocalScene(result) {
@@ -189,10 +195,35 @@ function renderCard(object) {
   sentence.className = "sentence";
   sentence.textContent = `${object.phonetic}  ${object.learning.example_sentence} ${object.learning.example_meaning}`;
 
+  const actions = document.createElement("div");
+  actions.className = "card-actions";
+
+  const speakBtn = document.createElement("button");
+  speakBtn.className = "speak-btn";
+  speakBtn.type = "button";
+  speakBtn.textContent = "朗读";
+  speakBtn.addEventListener("click", () => speakObject(object));
+
   word.append(english, chinese);
-  content.append(word, sentence);
+  actions.append(speakBtn);
+  content.append(word, sentence, actions);
   card.append(letter, content);
   return card;
+}
+
+function speakObject(object) {
+  if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) {
+    setStatus("No TTS", "is-error");
+    return;
+  }
+
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(object.speak_text || object.learning.example_sentence || object.english);
+  utterance.lang = "en-US";
+  utterance.rate = 0.9;
+  window.speechSynthesis.speak(utterance);
+  setStatus("Speaking", "is-busy");
+  utterance.onend = () => setStatus("Ready", "");
 }
 
 function setStatus(text, className) {
@@ -222,4 +253,78 @@ function toggleAutoScan() {
   autoBtn.textContent = "停止自动";
   autoBtn.classList.add("is-active");
   recognize(false);
+}
+
+function rememberLearnedWords(objects) {
+  const learned = loadLearnedWords();
+  for (const object of objects) {
+    if (!object.english) {
+      continue;
+    }
+    const key = object.english.toLowerCase();
+    const previous = learned[key] || {
+      english: object.english,
+      chinese: object.chinese,
+      count: 0,
+      last_seen: ""
+    };
+    learned[key] = {
+      ...previous,
+      chinese: object.chinese || previous.chinese,
+      count: previous.count + 1,
+      last_seen: new Date().toISOString()
+    };
+  }
+  saveLearnedWords(learned);
+  renderLearnedWords(learned);
+}
+
+function loadLearnedWords() {
+  try {
+    return JSON.parse(localStorage.getItem(learnedWordsKey) || "{}");
+  } catch (error) {
+    return {};
+  }
+}
+
+function saveLearnedWords(learned) {
+  try {
+    localStorage.setItem(learnedWordsKey, JSON.stringify(learned));
+  } catch (error) {
+    // Best-effort local learning history.
+  }
+}
+
+function renderLearnedWords(learned = loadLearnedWords()) {
+  const words = Object.values(learned)
+    .sort((a, b) => b.count - a.count || a.english.localeCompare(b.english))
+    .slice(0, 16);
+
+  if (words.length === 0) {
+    wordHistory.replaceChildren();
+    wordHistory.textContent = "识别后会自动记录单词。";
+    return;
+  }
+
+  wordHistory.replaceChildren(...words.map((word) => {
+    const chip = document.createElement("div");
+    chip.className = "word-chip";
+
+    const english = document.createElement("strong");
+    english.textContent = word.english;
+
+    const chinese = document.createElement("span");
+    chinese.textContent = word.chinese;
+
+    const count = document.createElement("em");
+    count.textContent = `x${word.count}`;
+
+    chip.append(english, chinese, count);
+    return chip;
+  }));
+}
+
+function clearLearnedWords() {
+  localStorage.removeItem(learnedWordsKey);
+  renderLearnedWords({});
 }
