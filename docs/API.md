@@ -14,9 +14,9 @@
 
 ## GET /
 
-模拟眼镜 HUD Demo。
+眼镜 HUD Demo。
 
-页面会调用 `/api/vision/recognize`，并把返回的 `box`、`letter`、`english`、`chinese`、`display_text` 叠加到模拟视野里。
+页面会调用 `/api/vision/recognize`，并把返回的 `box`、`letter`、`english`、`chinese`、`display_text` 叠加到视野里。默认使用模拟场景；允许浏览器摄像头权限后，会截取真实摄像头当前帧作为 `image_base64` 上传。
 
 ## POST /api/vision/recognize
 

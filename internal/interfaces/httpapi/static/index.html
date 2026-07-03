@@ -10,6 +10,8 @@
   <main class="app-shell">
     <section class="viewer" aria-label="glasses field of view">
       <div class="scene" id="scene">
+        <video class="camera-feed" id="cameraFeed" autoplay playsinline muted></video>
+        <canvas class="capture-canvas" id="captureCanvas" width="800" height="450"></canvas>
         <div class="surface table"></div>
         <div class="surface cup"></div>
         <div class="surface book"></div>
@@ -29,6 +31,7 @@
       </header>
 
       <div class="controls">
+        <button type="button" id="cameraBtn">打开摄像头</button>
         <button type="button" id="recognizeBtn">识别视野</button>
         <button type="button" id="cacheBtn">复用缓存</button>
       </div>

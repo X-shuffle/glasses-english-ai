@@ -93,6 +93,9 @@ func TestDemoPageAndStaticAssetsAreServed(t *testing.T) {
 	if !strings.Contains(rec.Body.String(), "Glasses English AI") {
 		t.Fatal("expected demo page content")
 	}
+	if !strings.Contains(rec.Body.String(), "cameraFeed") {
+		t.Fatal("expected camera video element")
+	}
 
 	req = httptest.NewRequest(http.MethodGet, "/static/app.js", nil)
 	rec = httptest.NewRecorder()
@@ -105,8 +108,12 @@ func TestDemoPageAndStaticAssetsAreServed(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(body), "display_text") {
+	script := string(body)
+	if !strings.Contains(script, "display_text") {
 		t.Fatal("expected HUD script content")
+	}
+	if !strings.Contains(script, "getUserMedia") {
+		t.Fatal("expected camera capture logic")
 	}
 }
 

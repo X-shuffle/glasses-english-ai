@@ -48,6 +48,31 @@ body {
   box-shadow: 0 24px 80px rgb(0 0 0 / 34%);
 }
 
+.camera-feed,
+.capture-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.camera-feed {
+  display: none;
+  object-fit: cover;
+}
+
+.capture-canvas {
+  display: none;
+}
+
+.scene.is-camera .camera-feed {
+  display: block;
+}
+
+.scene.is-camera .surface {
+  display: none;
+}
+
 .surface {
   position: absolute;
 }
@@ -182,7 +207,7 @@ h1 {
 
 .controls {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 10px;
 }
 
@@ -299,5 +324,9 @@ dd {
 
   .viewer {
     padding: 12px;
+  }
+
+  .controls {
+    grid-template-columns: 1fr;
   }
 }
