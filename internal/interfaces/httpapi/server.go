@@ -1,13 +1,18 @@
 package httpapi
 
 import (
+	"embed"
 	"encoding/json"
 	"errors"
+	"io/fs"
 	"net/http"
 
 	"glasses-english-ai/internal/application"
 	"glasses-english-ai/internal/domain"
 )
+
+//go:embed static
+var staticFiles embed.FS
 
 type Server struct {
 	recognizeFrame *application.RecognizeFrameUseCase
@@ -19,9 +24,19 @@ func NewServer(recognizeFrame *application.RecognizeFrameUseCase) *Server {
 
 func (s *Server) Routes() http.Handler {
 	mux := http.NewServeMux()
+	mux.HandleFunc("GET /", s.demo)
+	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.FS(mustStaticSubtree()))))
 	mux.HandleFunc("GET /healthz", s.health)
 	mux.HandleFunc("POST /api/vision/recognize", s.recognize)
 	return mux
+}
+
+func (s *Server) demo(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		http.NotFound(w, r)
+		return
+	}
+	http.ServeFileFS(w, r, staticFiles, "static/index.html")
 }
 
 func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
@@ -142,4 +157,12 @@ func writeJSON(w http.ResponseWriter, status int, payload any) {
 
 func writeError(w http.ResponseWriter, status int, message string) {
 	writeJSON(w, status, map[string]string{"error": message})
+}
+
+func mustStaticSubtree() fs.FS {
+	subtree, err := fs.Sub(staticFiles, "static")
+	if err != nil {
+		panic(err)
+	}
+	return subtree
 }

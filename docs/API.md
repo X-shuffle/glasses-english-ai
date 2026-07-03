@@ -12,6 +12,12 @@
 }
 ```
 
+## GET /
+
+模拟眼镜 HUD Demo。
+
+页面会调用 `/api/vision/recognize`，并把返回的 `box`、`letter`、`english`、`chinese`、`display_text` 叠加到模拟视野里。
+
 ## POST /api/vision/recognize
 
 识别眼镜上传的图片帧。

@@ -11,6 +11,7 @@ DDD 初版已经包含：
 - Go HTTP 服务端。
 - `/healthz` 健康检查接口。
 - `/api/vision/recognize` 识别接口。
+- `/` 模拟眼镜 HUD Demo，可以直接看到视野目标框和中英标签。
 - `RecognizeFrame` 应用用例。
 - `SceneRecognition`、`VisualObject`、`LearningCard` 领域模型。
 - 内存场景仓储，用于相似场景快速返回。
@@ -33,6 +34,14 @@ make run
 ```text
 http://localhost:8080
 ```
+
+打开浏览器访问：
+
+```text
+http://localhost:8080/
+```
+
+页面会模拟眼镜视野，把识别结果叠加成目标框和 `A cup / 杯子` 这类中英标签。
 
 测试识别接口：
 
@@ -206,6 +215,7 @@ internal/domain        领域模型、仓储接口、外部能力端口
 internal/infrastructure/cache      内存场景仓储
 internal/infrastructure/learning   静态中英学习词典
 internal/infrastructure/vision     Mock 视觉识别器
+internal/interfaces/httpapi/static HUD Demo 静态页面
 docs                   架构、API、路线图
 ```
 

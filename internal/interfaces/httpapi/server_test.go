@@ -3,8 +3,10 @@ package httpapi
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -75,6 +77,36 @@ func TestRecognizeReusesSceneCache(t *testing.T) {
 	}
 	if cached.SceneHash != first.SceneHash {
 		t.Fatalf("expected scene hash %q, got %q", first.SceneHash, cached.SceneHash)
+	}
+}
+
+func TestDemoPageAndStaticAssetsAreServed(t *testing.T) {
+	server := newTestServer()
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rec := httptest.NewRecorder()
+	server.Routes().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected demo status 200, got %d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "Glasses English AI") {
+		t.Fatal("expected demo page content")
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/static/app.js", nil)
+	rec = httptest.NewRecorder()
+	server.Routes().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected static status 200, got %d", rec.Code)
+	}
+	body, err := io.ReadAll(rec.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(body), "display_text") {
+		t.Fatal("expected HUD script content")
 	}
 }
 

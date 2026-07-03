@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Glasses English AI HUD</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section class="viewer" aria-label="glasses field of view">
+      <div class="scene" id="scene">
+        <div class="surface table"></div>
+        <div class="surface cup"></div>
+        <div class="surface book"></div>
+        <div class="surface phone"></div>
+        <div class="surface pen"></div>
+        <div class="overlay" id="overlay"></div>
+      </div>
+    </section>
+
+    <aside class="learning-panel">
+      <header class="panel-header">
+        <div>
+          <p class="eyebrow">Glasses English AI</p>
+          <h1>视野英语标签</h1>
+        </div>
+        <span class="status" id="status">Ready</span>
+      </header>
+
+      <div class="controls">
+        <button type="button" id="recognizeBtn">识别视野</button>
+        <button type="button" id="cacheBtn">复用缓存</button>
+      </div>
+
+      <dl class="meta">
+        <div>
+          <dt>Scene</dt>
+          <dd id="sceneHash">-</dd>
+        </div>
+        <div>
+          <dt>Cache</dt>
+          <dd id="cacheState">false</dd>
+        </div>
+      </dl>
+
+      <div class="cards" id="cards" aria-live="polite"></div>
+    </aside>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

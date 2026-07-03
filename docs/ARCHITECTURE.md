@@ -17,7 +17,7 @@
 
 ```text
 interfaces/httpapi
-  接收眼镜请求，转换 JSON DTO，返回 HUD 可用的中英标签。
+  接收眼镜请求，转换 JSON DTO，返回 HUD 可用的中英标签，并提供模拟 HUD Demo。
 
 application
   编排 RecognizeFrame 用例：校验帧、查缓存、调用识别、生成学习内容、保存场景。
@@ -37,6 +37,8 @@ infrastructure
 - 在画面上显示 `A/B/C` 标签。
 - 播放英文发音和短句。
 - 离线时使用最近结果和本地轻量模型。
+
+当前第一版提供浏览器 HUD Demo 来模拟眼镜端：服务启动后访问 `/`，可以看到识别框、英文字母标签、英文单词、中文释义和例句卡片。
 
 ### Go 服务端
 
